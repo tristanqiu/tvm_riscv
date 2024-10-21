@@ -16,6 +16,12 @@ from tvm.testing.aot import (
 import os
 
 
+def _preprocess_code(src):
+    """Hack the C code implementing the model."""
+    dst = "#include <stdio.h>\n" "#include <math.h>\n\n"
+    dst = dst + src
+    return dst
+
 def test_sub(type):
     # TE + llvm + tvm.build -> asm code
     target = "llvm  -mtriple=riscv64-unknown-linux-gnu -mcpu=generic-rv64 -mabi=lp64d -mattr=+64bit,+m,+f,+d"
@@ -33,7 +39,7 @@ def test_sub(type):
     print(assembly)
 
 def test_sub2(type):
-    # TE + llvm + tvm.build -> asm code
+    # relay +  + tvm.build -> asm code
     relay_mod = tvm.relay.fromtext(
         """
         #[version = "0.0.5"]
@@ -67,8 +73,13 @@ def test_sub2(type):
     )
     source = compiled_test_mods[0].executor_factory.lib.imported_modules[0].get_source()
     
-    print(source)
-    # Verify we see SVE load instructions and sub instructions using z registers
+    # print(source)
+    code = _preprocess_code(source)
+    # filename = os.path.join(dest_dir, f"{model_name}_lib{idx}.c")
+    filename = "./test.c"
+    with open(filename, "w") as fout:
+        fout.write(code)
+    # cmd = "./riscv32-unknown-elf-gcc -Iinclude/ -I3rdparty/dlpack/include -S -O3 test.c"
 
 
 if __name__ == "__main__":
