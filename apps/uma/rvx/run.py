@@ -57,9 +57,63 @@ def create_conv2d(groups=1, runner=AOT_DEFAULT_RUNNER, weight_shape=32):
     output_list = generate_ref_data(mod, inputs)
     return mod, inputs, output_list, runner
 
+def create_qnn_conv2d(groups=1, runner=AOT_DEFAULT_RUNNER, weight_shape=32):
+    dtype = "int8"
+    # ishape = (1, 32, 14, 14)
+    # wshape = (32, weight_shape, 3, 3)
+    pass_config = {"tir.usmp.enable": True}
+    runner = AOTRunner(
+        makefile=runner.makefile,
+        prologue=runner.prologue,
+        epilogue=runner.epilogue,
+        includes=runner.includes,
+        parameters=runner.parameters,
+        pass_config=pass_config,
+    )
+    # data0 = relay.var("data", shape=ishape, dtype=dtype)
+    # weight0 = relay.var("weight", shape=wshape, dtype=dtype)
+    # qnn_out = relay.qnn.conv2d(data0, weight0, 0, 0, 0.125, 0.125, channels=10, kernel_size=(3, 3), padding=(1, 1), groups=groups)
+    # out = relay.qnn.requantize(qnn_out, 0.125, 0, 0.125, 0, axis=1, out_dtype=dtype)
+    data_shape = [1, 8, 32, 32]
+    weight_shape = [16, 8, 3, 3]
+    data = relay.var("data", shape=data_shape, dtype="float32")
+    weight = relay.var("weight", shape=weight_shape, dtype="float32")
+    op0 = relay.qnn.quantize(data, relay.const(0.078), relay.const(0), out_dtype="uint8")
+    op1 = relay.qnn.quantize(weight, relay.const(0.07), relay.const(0), out_dtype="int8")
+    op2 = relay.qnn.conv2d(
+        op0,
+        op1,
+        input_zero_point=relay.const(0),
+        kernel_zero_point=relay.const(0),
+        input_scale=relay.const(0.078),
+        kernel_scale=relay.const(0.07),
+        padding=[0, 0, 0, 0],
+        channels=16,
+        kernel_size=[3, 3],
+    )
+    op5 = relay.qnn.requantize(
+        op2,
+        input_scale=relay.const(0.05),
+        input_zero_point=relay.const(0),
+        output_scale=relay.const(0.21),
+        output_zero_point=relay.const(61),
+        out_dtype="int8",
+    )
+
+    main_f = relay.Function([data, weight], op5)
+    mod = tvm.IRModule()
+    mod["main"] = main_f
+    mod = transform.InferType()(mod)
+    i_data = np.random.uniform(0, 1, data_shape).astype(dtype)
+    w1_data = np.random.uniform(0, 1, weight_shape).astype(dtype)
+    inputs = OrderedDict([("data", i_data), ("weight", w1_data)])
+    output_list = generate_ref_data(mod, inputs)
+    return mod, inputs, output_list, runner
+
 
 def main():
-    mod, inputs, output_list, runner = create_conv2d()
+    mod, inputs, output_list, runner = create_conv2d()  # pass
+    # mod, inputs, output_list, runner = create_qnn_conv2d() # failed
 
     uma_backend = RvxBackend()
     uma_backend.register()

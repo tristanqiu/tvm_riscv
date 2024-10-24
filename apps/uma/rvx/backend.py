@@ -19,7 +19,7 @@ from passes import RvxConv2dPass
 from tvm.relay.backend.contrib.uma.api.utils import PassPhase
 from tvm.relay.backend.contrib.uma.backend import UMABackend
 from codegen import gen_includes
-from patterns import conv2d_pattern
+from patterns import conv2d_pattern, qnn_conv2d_pattern
 
 
 class RvxBackend(UMABackend):
@@ -33,6 +33,7 @@ class RvxBackend(UMABackend):
 
         # Relay Pattern registration
         self._register_pattern("conv2d", conv2d_pattern())
+        self._register_pattern("qnn_conv2d", qnn_conv2d_pattern())
 
         # Relay to TIR function registration
         self._register_tir_pass(PassPhase.TIR_PHASE_0, RvxConv2dPass())

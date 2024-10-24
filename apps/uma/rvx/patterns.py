@@ -16,7 +16,7 @@
 # under the License.
 """Relay graph patterns for the rvx accelerator"""
 
-from tvm.relay.dataflow_pattern import is_op, wildcard
+from tvm.relay.dataflow_pattern import is_op, wildcard, is_constant
 
 
 def conv2d_pattern():
@@ -24,7 +24,11 @@ def conv2d_pattern():
     pattern = pattern.has_attr({"strides": [1, 1], "groups": 1})
     return pattern
 
-
 def dense_pattern():
     pattern = is_op("nn.dense")(wildcard(), wildcard())
+    return pattern
+
+def qnn_conv2d_pattern():
+    pattern = is_op("qnn.conv2d")(wildcard(), wildcard())
+    pattern = is_op("qnn.requantize")(pattern, wildcard(), wildcard(), wildcard(), wildcard())
     return pattern
