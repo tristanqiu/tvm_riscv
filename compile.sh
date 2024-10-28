@@ -9,9 +9,10 @@ if [ ! -d ${BUILD_DIR} ]; then
 fi
 
 cd ${BUILD_DIR}
+cp ../config.cmake .
 cmake ../
 
-make -j3
+make -j4
 if [ ! $? ]; then
     echo "Build TVM Failed!"
     exit 0

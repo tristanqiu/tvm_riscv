@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 """UMA backend for the rvx accelerator"""
-from passes import RvxConv2dPass
+from passes import RvxConv2dPass, RvxQnnConv2dPass
 from tvm.relay.backend.contrib.uma.api.utils import PassPhase
 from tvm.relay.backend.contrib.uma.backend import UMABackend
 from codegen import gen_includes
@@ -36,7 +36,8 @@ class RvxBackend(UMABackend):
         self._register_pattern("qnn_conv2d", qnn_conv2d_pattern())
 
         # Relay to TIR function registration
-        self._register_tir_pass(PassPhase.TIR_PHASE_0, RvxConv2dPass())
+        # self._register_tir_pass(PassPhase.TIR_PHASE_0, RvxConv2dPass())
+        self._register_tir_pass(PassPhase.TIR_PHASE_0, RvxQnnConv2dPass())
 
         # TIR to runtime function registration
         self._register_codegen(fmt="c", includes=gen_includes)

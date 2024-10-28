@@ -76,13 +76,13 @@ def create_qnn_conv2d(groups=1, runner=AOT_DEFAULT_RUNNER, weight_shape=32):
     # out = relay.qnn.requantize(qnn_out, 0.125, 0, 0.125, 0, axis=1, out_dtype=dtype)
     data_shape = [1, 8, 32, 32]
     weight_shape = [16, 8, 3, 3]
-    data = relay.var("data", shape=data_shape, dtype="float32")
-    weight = relay.var("weight", shape=weight_shape, dtype="float32")
-    op0 = relay.qnn.quantize(data, relay.const(0.078), relay.const(0), out_dtype="uint8")
-    op1 = relay.qnn.quantize(weight, relay.const(0.07), relay.const(0), out_dtype="int8")
+    data = relay.var("data", shape=data_shape, dtype="int8")
+    weight = relay.var("weight", shape=weight_shape, dtype="int8")
+    # op0 = relay.qnn.quantize(data, relay.const(0.078), relay.const(0), out_dtype="uint8")
+    # op1 = relay.qnn.quantize(weight, relay.const(0.07), relay.const(0), out_dtype="int8")
     op2 = relay.qnn.conv2d(
-        op0,
-        op1,
+        data,
+        weight,
         input_zero_point=relay.const(0),
         kernel_zero_point=relay.const(0),
         input_scale=relay.const(0.078),
@@ -113,7 +113,7 @@ def create_qnn_conv2d(groups=1, runner=AOT_DEFAULT_RUNNER, weight_shape=32):
 
 def main():
     mod, inputs, output_list, runner = create_conv2d()  # pass
-    # mod, inputs, output_list, runner = create_qnn_conv2d() # failed
+    # mod, inputs, output_list, runner = create_qnn_conv2d() # working on
 
     uma_backend = RvxBackend()
     uma_backend.register()
