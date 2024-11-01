@@ -32,3 +32,7 @@ def qnn_conv2d_pattern():
     pattern = is_op("qnn.conv2d")(wildcard(), wildcard())
     pattern = is_op("qnn.requantize")(pattern, wildcard(), wildcard(), wildcard(), wildcard())
     return pattern
+
+def requantize_pattern():
+    pattern = is_op("qnn.requantize")(wildcard(), wildcard(), wildcard(), wildcard(), wildcard())
+    return pattern
