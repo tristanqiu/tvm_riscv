@@ -100,41 +100,9 @@ class RvxConv2dPass:
 
         r = _detect_and_replace_conv2d(func, mod, ctx)
         return r
+    
 
-
-def tir_call(ib: tvm.tir.ir_builder, extern: bool, name: str, *args):
-    """
-    ib: ir_builder
-    extern: bool
-        True  --> tvm.tir.call_extern
-        False --> tvm.tir.call_packed
-    name: str
-        function name
-    *args:
-        arguments for function call
-    """
-
-    def buf_from_array(ib, arr, dtype):
-        # Allocate enough memory to store the whole array
-        var = ib.allocate("int32", (len(arr),), scope="global")
-        for i, v in enumerate(arr):
-            var[i] = v
-        # Declare a buffer, which is basically a view on the chunk of memory that we allocated
-        buf = tvm.tir.decl_buffer((len(arr),), dtype, data=var, scope="global")
-        return buf
-
-    if extern:
-        args = [i.data if isinstance(i, tvm.tir.Buffer) else i for i in args]
-        return tvm.tir.call_extern("int32", name, *args)
-    else:
-        args = [
-            buf_from_array(ib, i, "int32")
-            if isinstance(i, (tuple, list, tvm.ir.container.Array))
-            else i
-            for i in args
-        ]
-        return tvm.tir.call_packed(name, *args)
-
+@tvm.tir.transform.prim_func_pass(opt_level=2)
 class RvxQnnConv2dPass:
     _EXTERNAL_FUNCTION_NAME = "rvx_conv2dnchw"
     _TVM_BLOCK_MATCH_NAME = "conv2d_nchw"
@@ -145,7 +113,7 @@ class RvxQnnConv2dPass:
         return self._rvx_qnn_conv2d_pass(func, mod, ctx)
 
     @classmethod
-    def _rvx_qnn_conv2d_pass(cls, func, mod, ctx):
+    def _rvx_qnn_conv2d_pass(cls, func, mod, ctx):  # need to be updated
         _loops = dict()
         _handles = []
         _entry_node = None

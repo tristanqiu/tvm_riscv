@@ -118,6 +118,7 @@ def main():
     uma_backend = RvxBackend()
     uma_backend.register()
     mod = uma_backend.partition(mod)
+    print(mod)
     target = tvm.target.Target("rvx", host=tvm.target.Target("c"))
 
     export_directory = tvm.contrib.utils.tempdir(keep_for_debug=True).path
