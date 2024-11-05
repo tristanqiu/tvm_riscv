@@ -616,6 +616,7 @@ include(cmake/modules/Git.cmake)
 include(cmake/modules/LibInfo.cmake)
 include(cmake/modules/RustExt.cmake)
 include(cmake/modules/contrib/Mrvl.cmake)
+include(cmake/modules/contrib/RVX.cmake)
 
 set(LIBINFO_FILE ${CMAKE_CURRENT_LIST_DIR}/src/support/libinfo.cc)
 add_lib_info(${LIBINFO_FILE})
