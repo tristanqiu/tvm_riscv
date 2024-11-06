@@ -16,6 +16,8 @@
 # under the License.
 
 if(USE_RVX)
+  add_definitions(-DTVM_USE_RVX)
+  message(STATUS "Build with contrib.RVX")
   file(GLOB COMPILE_RVX_SRCS
        CONFIGURE_DEPENDS src/relay/backend/contrib/rvx/*)
   list(APPEND COMPILER_SRCS ${COMPILER_RVX_SRCS})
