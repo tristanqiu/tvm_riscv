@@ -372,7 +372,7 @@ class CodegenRVX : public MemoizedExprTranslator<std::vector<Output>>, public Co
 class RVXModuleCodegen : public CSourceModuleCodegenBase {
  public:
   // Create a corresponding DNNL function for the given relay Function.
-  std::pair<std::string, Array<String>> GenDNNLFunc(const Function& func) {
+  std::pair<std::string, Array<String>> GenRVXFunc(const Function& func) {
     ICHECK(func.defined()) << "Input error: expect a Relay function.";
 
     // Record the external symbol for runtime lookup.
@@ -414,7 +414,7 @@ class RVXModuleCodegen : public CSourceModuleCodegenBase {
     code_stream_ << "\n";
 
     ICHECK(ref->IsInstance<FunctionNode>());
-    auto res = GenDNNLFunc(Downcast<Function>(ref));
+    auto res = GenRVXFunc(Downcast<Function>(ref));
     std::string code = code_stream_.str();
     String sym = std::get<0>(res);
     Array<String> variables = std::get<1>(res);

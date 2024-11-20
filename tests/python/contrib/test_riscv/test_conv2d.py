@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 import tvm
 from tvm import relay
-from tvm.relay.op.contrib import cmsisnn
+from tvm.relay.op.contrib import rvx
 
 from tvm.testing.aot import (
     get_dtype_range,
@@ -196,10 +196,10 @@ def test_conv2d_number_primfunc_args(
         relu_type,
     )
     orig_mod = make_module(model)
-    cmsisnn_mod = cmsisnn.partition_for_cmsisnn(orig_mod, params)
+    rvx_mod = rvx.partition_for_rvx(orig_mod, params)
 
     # validate pattern matching
-    assert_partitioned_function(orig_mod, cmsisnn_mod)
+    assert_partitioned_function(orig_mod, rvx_mod)
 
     # compile the model
     rng = np.random.default_rng(12345)
@@ -207,7 +207,7 @@ def test_conv2d_number_primfunc_args(
     output_list = generate_ref_data(orig_mod["main"], inputs, params)
 
     compiled_models = compile_models(
-        AOTTestModel(module=cmsisnn_mod, inputs=inputs, outputs=output_list, params=params),
+        AOTTestModel(module=rvx_mod, inputs=inputs, outputs=output_list, params=params),
         interface_api,
         use_unpacked_api,
         pass_config={"tir.usmp.enable": False},
@@ -303,10 +303,10 @@ def test_conv2d_symmetric_padding(
         relu_type,
     )
     orig_mod = make_module(model)
-    cmsisnn_mod = cmsisnn.partition_for_cmsisnn(orig_mod, params)
+    rvx_mod = rvx.partition_for_rvx(orig_mod, params)
 
     # validate pattern matching
-    assert_partitioned_function(orig_mod, cmsisnn_mod)
+    assert_partitioned_function(orig_mod, rvx_mod)
 
     # validate the output
     rng = np.random.default_rng(12345)
@@ -314,7 +314,7 @@ def test_conv2d_symmetric_padding(
     output_list = generate_ref_data(orig_mod["main"], inputs, params)
     compile_and_run(
         AOTTestModel(
-            module=cmsisnn_mod,
+            module=rvx_mod,
             inputs=inputs,
             outputs=output_list,
             params=params,
@@ -397,9 +397,9 @@ def test_conv2d_asymmetric_padding(
         relu_type,
     )
     orig_mod = make_module(model)
-    cmsisnn_mod = cmsisnn.partition_for_cmsisnn(orig_mod, params)
+    rvx_mod = rvx.partition_for_rvx(orig_mod, params)
     # validate pattern matching
-    assert_partitioned_function(orig_mod, cmsisnn_mod)
+    assert_partitioned_function(orig_mod, rvx_mod)
 
     # validate the output
     rng = np.random.default_rng(12345)
@@ -407,7 +407,7 @@ def test_conv2d_asymmetric_padding(
     output_list = generate_ref_data(orig_mod["main"], inputs, params)
     compile_and_run(
         AOTTestModel(
-            module=cmsisnn_mod,
+            module=rvx_mod,
             inputs=inputs,
             outputs=output_list,
             params=params,
@@ -501,16 +501,16 @@ def test_pad_conv2d_fusion_int8(
         input_op=pad,
     )
     orig_mod = make_module(model)
-    cmsisnn_mod = cmsisnn.partition_for_cmsisnn(orig_mod, params)
+    rvx_mod = rvx.partition_for_rvx(orig_mod, params)
 
     # validate pattern matching
-    assert_partitioned_function(orig_mod, cmsisnn_mod, False)
+    assert_partitioned_function(orig_mod, rvx_mod, False)
 
     # check pad is not present inside CMSIS-NN partitioned function
     cmsisnn_func = None
-    for var in cmsisnn_mod.get_global_vars():
+    for var in rvx_mod.get_global_vars():
         if "cmsis_nn_main_0" in var.name_hint:
-            cmsisnn_func = cmsisnn_mod[var]
+            cmsisnn_func = rvx_mod[var]
             pad_verifier = CheckForPadsWithinCompositeFunc()
             pad_verifier.visit_function(cmsisnn_func)
             pad_verifier.assert_no_pads_within_func()
@@ -521,7 +521,7 @@ def test_pad_conv2d_fusion_int8(
     output_list = generate_ref_data(orig_mod["main"], inputs, params)
     compile_and_run(
         AOTTestModel(
-            module=cmsisnn_mod,
+            module=rvx_mod,
             inputs=inputs,
             outputs=output_list,
             params=params,
@@ -615,21 +615,21 @@ def test_invalid_pad_conv2d_fusion_int8(
         input_op=pad,
     )
     orig_mod = make_module(model)
-    cmsisnn_mod = cmsisnn.partition_for_cmsisnn(orig_mod, params)
+    rvx_mod = rvx.partition_for_rvx(orig_mod, params)
 
     # validate pattern matching
-    assert_partitioned_function(orig_mod, cmsisnn_mod)
+    assert_partitioned_function(orig_mod, rvx_mod)
 
     # check pad is only present inside main function
     cmsisnn_func = None
-    for var in cmsisnn_mod.get_global_vars():
+    for var in rvx_mod.get_global_vars():
         if "cmsis_nn_main_0" in var.name_hint:
-            cmsisnn_func = cmsisnn_mod[var]
+            cmsisnn_func = rvx_mod[var]
             pad_verifier = CheckForPadsWithinCompositeFunc()
             pad_verifier.visit_function(cmsisnn_func)
             pad_verifier.assert_no_pads_within_func()
         else:
-            main_func = cmsisnn_mod[var]
+            main_func = rvx_mod[var]
             pad_verifier = CheckForPadsWithinCompositeFunc()
             pad_verifier.visit_function(main_func)
             pad_verifier.assert_pads_within_func()
@@ -640,7 +640,7 @@ def test_invalid_pad_conv2d_fusion_int8(
     output_list = generate_ref_data(orig_mod["main"], inputs, params)
     compile_and_run(
         AOTTestModel(
-            module=cmsisnn_mod,
+            module=rvx_mod,
             inputs=inputs,
             outputs=output_list,
             params=params,
@@ -675,16 +675,16 @@ def test_conv2d_int8_tflite(ifm_shape, kernel_shape, strides, dilation, padding,
     tfl_model.create_tflite_model(conv2d_function, [ifm_shape])
     relay_mod, relay_params = tfl_model.convert_to_relay()
 
-    cmsisnn_mod = cmsisnn.partition_for_cmsisnn(relay_mod, relay_params)
+    rvx_mod = rvx.partition_for_rvx(relay_mod, relay_params)
 
     # validate pattern matching
-    assert_partitioned_function(relay_mod, cmsisnn_mod)
+    assert_partitioned_function(relay_mod, rvx_mod)
 
     # validate CMSIS-NN output against TFLite output
     input_map, output_map, output_tolerance = tfl_model.generate_reference_data()
     compile_and_run(
         AOTTestModel(
-            module=cmsisnn_mod,
+            module=rvx_mod,
             inputs=input_map,
             outputs=output_map,
             params=relay_params,
@@ -787,10 +787,10 @@ def test_depthwise(
         relu_type,
     )
     orig_mod = make_module(model)
-    cmsisnn_mod = cmsisnn.partition_for_cmsisnn(orig_mod, params)
+    rvx_mod = rvx.partition_for_rvx(orig_mod, params)
 
     # validate pattern matching
-    assert_partitioned_function(orig_mod, cmsisnn_mod)
+    assert_partitioned_function(orig_mod, rvx_mod)
 
     # validate the output
     rng = np.random.default_rng(12345)
@@ -798,7 +798,7 @@ def test_depthwise(
     output_list = generate_ref_data(orig_mod["main"], inputs, params)
     compile_and_run(
         AOTTestModel(
-            module=cmsisnn_mod,
+            module=rvx_mod,
             inputs=inputs,
             outputs=output_list,
             params=params,
@@ -896,10 +896,10 @@ def test_relay_conv2d_cmsisnn_depthwise_int8(
         relu_type,
     )
     orig_mod = make_module(model)
-    cmsisnn_mod = cmsisnn.partition_for_cmsisnn(orig_mod, params)
+    rvx_mod = rvx.partition_for_rvx(orig_mod, params)
 
     # validate pattern matching
-    assert_partitioned_function(orig_mod, cmsisnn_mod)
+    assert_partitioned_function(orig_mod, rvx_mod)
 
     # generate reference output
     rng = np.random.default_rng(12345)
@@ -909,7 +909,7 @@ def test_relay_conv2d_cmsisnn_depthwise_int8(
     # validate presence of depthwise convolution
     compiled_models = compile_models(
         AOTTestModel(
-            module=cmsisnn_mod,
+            module=rvx_mod,
             inputs=inputs,
             outputs=output_list,
             params=params,
@@ -1017,9 +1017,10 @@ def test_invalid_parameters(
         relu_type="NONE",
     )
     orig_mod = make_module(model)
-    cmsisnn_mod = cmsisnn.partition_for_cmsisnn(orig_mod, params)
-    assert_no_external_function(cmsisnn_mod)
+    rvx_mod = rvx.partition_for_rvx(orig_mod, params)
+    assert_no_external_function(rvx_mod)
 
 
 if __name__ == "__main__":
-    tvm.testing.main()
+    # tvm.testing.main()
+    test_conv2d_number_primfunc_args

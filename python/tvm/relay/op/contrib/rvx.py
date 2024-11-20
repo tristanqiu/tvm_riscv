@@ -14,7 +14,7 @@ def enabled():
     return "rvx" in Target.list_kinds()
 
 
-def partition_for_cmsisnn(mod, params=None, mod_name="default", **opts):
+def partition_for_rvx(mod, params=None, mod_name="default", **opts):
     """Partition the graph greedily offloading supported
     operators on RVX
 
